@@ -618,7 +618,7 @@
 <script>
 // ===== CONFIG =====
 // Set this to your deployed backend URL after deploying
-const API_BASE = window.LUCKY7_API || 'http://localhost:5000';
+const API_BASE = 'http://localhost:5000';
 
 const SUIT_SYMBOLS = { diamonds: '♦', hearts: '♥', clubs: '♣', spades: '♠' };
 const SUIT_COLORS = { diamonds: 'red', hearts: 'red', clubs: 'black', spades: 'black' };
@@ -924,7 +924,7 @@ document.getElementById('exit-modal').addEventListener('click', function(e) {
   if (e.target === this) closeExitModal();
 });
 
-
+function showError(id, msg) {
   document.getElementById(id).textContent = msg;
   setTimeout(() => document.getElementById(id).textContent = '', 4000);
 }
