@@ -196,7 +196,7 @@ def play_card():
         if winner not in game['rankings']:
             game['rankings'].append(winner)
     else:
-        # Add to rankings if hand empty (shouldn't happen mid-game but safety)
+        # Always advance turn after playing a card (one card per turn rule)
         _advance_turn(game)
     
     return jsonify({'success': True})
@@ -226,14 +226,13 @@ def pass_turn():
 
 def _advance_turn(game):
     n = len(game['player_order'])
-    next_idx = (game['current_turn_index'] + 1) % n
-    # Skip players with empty hands
-    for _ in range(n):
+    # Always move at least 1 step forward from current
+    for i in range(1, n + 1):
+        next_idx = (game['current_turn_index'] + i) % n
         pid = game['player_order'][next_idx]
         if len(game['players'][pid]['hand']) > 0:
             game['current_turn_index'] = next_idx
             return
-        next_idx = (next_idx + 1) % n
 
 @app.route('/api/game_state', methods=['GET'])
 def game_state():
