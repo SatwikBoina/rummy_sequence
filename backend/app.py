@@ -35,7 +35,7 @@ def deal_cards(players, deck):
 
 def find_starter(hands):
     """Find who has Diamond 7"""
-    for player_id, hand in hands.items():
+    for player_id, player in players.items():
         for card in hand:
             if card['suit'] == 'diamonds' and card['rank'] == 7:
                 return player_id
@@ -62,9 +62,9 @@ def get_valid_moves(hand, board):
                 valid.append(card)
     return valid
 
-def check_winner(hands):
-    for player_id, hand in hands.items():
-        if len(hand) == 0:
+def check_winner(players):
+    for player_id, player in players.items():
+        if len(player['hand']) == 0:
             return player_id
     return None
 
