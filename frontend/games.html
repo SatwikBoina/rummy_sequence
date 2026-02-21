@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Room</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Cormorant Garamond',serif;background:#0e0e0b;color:#f5f0e8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(212,168,67,0.05),transparent 60%);pointer-events:none;}
+h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;color:#d4a843;letter-spacing:0.05em;text-align:center;margin-bottom:0.25rem;}
+.sub{font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.3em;color:rgba(245,240,232,0.35);text-align:center;margin-bottom:3rem;text-transform:uppercase;}
+.games{display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;max-width:700px;}
+.game-card{background:#1a1a16;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:2.5rem 2rem;flex:1;min-width:260px;max-width:320px;cursor:pointer;transition:all 0.25s;text-decoration:none;color:inherit;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.75rem;}
+.game-card:hover{border-color:rgba(212,168,67,0.5);transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.4);}
+.game-icon{font-size:3.5rem;line-height:1;}
+.game-name{font-size:1.8rem;font-weight:700;color:#d4a843;}
+.game-desc{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:rgba(245,240,232,0.45);line-height:1.6;letter-spacing:0.03em;}
+.badge{font-family:'JetBrains Mono',monospace;font-size:0.62rem;padding:0.25rem 0.75rem;border-radius:20px;background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.25);color:#d4a843;margin-top:0.25rem;}
+</style>
+</head>
+<body>
+<h1>🃏 Game Room</h1>
+<div class="sub">Choose your game</div>
+<div class="games">
+  <a href="rummy.html" class="game-card">
+    <div class="game-icon">🂡</div>
+    <div class="game-name">Rummy</div>
+    <div class="game-desc">Meld cards into sets & runs. First to go out wins. Supports Indian, Gin & Classic variants.</div>
+    <div class="badge">2–6 Players · Score Tracking</div>
+  </a>
+  <a href="index.html" class="game-card">
+    <div class="game-icon">♦</div>
+    <div class="game-name">Lucky 7</div>
+    <div class="game-desc">Start with Diamond 7 and extend the board. First to discard all cards wins the round!</div>
+    <div class="badge">2–6 Players · Quick Play</div>
+  </a>
+</div>
+</body>
+</html>

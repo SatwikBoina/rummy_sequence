@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rummy — Card Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #12120f;
+  --surface: #1c1c18;
+  --surface2: #252520;
+  --border: rgba(255,255,255,0.08);
+  --gold: #d4a843;
+  --gold2: #f0c96a;
+  --cream: #f5f0e8;
+  --red: #c0392b;
+  --green: #27ae60;
+  --muted: rgba(245,240,232,0.45);
+  --card-w: 68px;
+  --card-h: 100px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--cream);min-height:100vh;overflow-x:hidden;}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem;position:relative;z-index:1;}
+.screen.active{display:flex;}
+#game-screen{align-items:stretch;justify-content:flex-start;padding:0;}
+#game-screen.active{display:flex;flex-direction:column;}
+
+/* ── BG TEXTURE ── */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(212,168,67,0.04) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(192,57,43,0.04) 0%,transparent 50%);pointer-events:none;z-index:0;}
+
+/* ── LOGO ── */
+.logo{font-family:'Cormorant Garamond',serif;font-size:clamp(2.8rem,7vw,5rem);font-weight:700;color:var(--gold);letter-spacing:0.05em;text-align:center;line-height:1;}
+.logo-sub{font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.3em;color:var(--muted);text-align:center;margin-top:0.25rem;margin-bottom:2.5rem;text-transform:uppercase;}
+
+/* ── PANEL ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.75rem;width:100%;max-width:460px;}
+.panel h2{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold);margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);}
+
+/* ── FORM ── */
+.form-group{margin-bottom:1rem;}
+.form-group label{display:block;font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+input[type=text],select{width:100%;padding:0.7rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--cream);font-family:'JetBrains Mono',monospace;font-size:0.9rem;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+input[type=text]::placeholder{color:rgba(245,240,232,0.25);}
+input[type=text]:focus,select:focus{border-color:var(--gold);}
+select option{background:#1c1c18;}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:0.8rem 1.5rem;border:none;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.8rem;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#12120f;font-weight:700;}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(212,168,67,0.35);}
+.btn-gold:disabled{opacity:0.35;transform:none;cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--cream);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-danger{background:transparent;border:1px solid rgba(192,57,43,0.4);color:rgba(192,57,43,0.8);font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.08em;padding:0.4rem 0.9rem;border-radius:6px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.btn-danger:hover{background:rgba(192,57,43,0.12);color:var(--red);border-color:var(--red);}
+
+.divider{display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:var(--muted);font-size:0.75rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── SEGMENT CONTROL (variant picker) ── */
+.segment{display:flex;background:rgba(0,0,0,0.3);border-radius:8px;padding:3px;gap:3px;margin-bottom:1rem;}
+.segment-btn{flex:1;padding:0.5rem;border:none;background:transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.05em;border-radius:6px;cursor:pointer;transition:all 0.2s;text-align:center;line-height:1.3;}
+.segment-btn.active{background:var(--surface2);color:var(--gold);border:1px solid rgba(212,168,67,0.3);}
+
+/* ── WAITING ROOM ── */
+.game-code{font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:700;color:var(--gold);letter-spacing:0.4em;text-align:center;margin:0.75rem 0;text-shadow:0 0 30px rgba(212,168,67,0.4);}
+.player-chip{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1rem;background:var(--surface2);border-radius:8px;border-left:2px solid var(--gold);font-family:'JetBrains Mono',monospace;font-size:0.82rem;animation:slideIn 0.3s ease;}
+.player-chip .av{width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;color:#12120f;font-weight:700;font-size:0.72rem;flex-shrink:0;}
+.host-tag{margin-left:auto;font-size:0.62rem;color:var(--gold);opacity:0.65;}
+.score-tag{margin-left:auto;font-size:0.75rem;color:var(--gold);font-weight:700;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── TOP BAR ── */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1.25rem;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:0.75rem;}
+.game-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--gold);font-weight:700;white-space:nowrap;}
+.round-badge{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);white-space:nowrap;}
+.turn-pill{font-family:'JetBrains Mono',monospace;font-size:0.72rem;padding:0.35rem 0.9rem;border-radius:20px;background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.25);color:var(--gold);white-space:nowrap;}
+.turn-pill.mine{background:var(--gold);color:#12120f;font-weight:700;animation:glow 1.5s ease-in-out infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 5px rgba(212,168,67,0.4)}50%{box-shadow:0 0 18px rgba(212,168,67,0.8)}}
+
+/* ── SCORE BAR ── */
+.score-bar{display:flex;gap:0.5rem;padding:0.5rem 1rem;overflow-x:auto;flex-shrink:0;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border);}
+.score-chip{display:flex;flex-direction:column;align-items:center;gap:0.1rem;padding:0.4rem 0.8rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);min-width:80px;flex-shrink:0;transition:all 0.3s;}
+.score-chip.active-player{border-color:var(--gold);box-shadow:0 0 12px rgba(212,168,67,0.25);}
+.score-chip .sc-name{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);white-space:nowrap;max-width:75px;overflow:hidden;text-overflow:ellipsis;}
+.score-chip .sc-score{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--gold);}
+.score-chip .sc-cards{font-size:0.6rem;color:var(--muted);}
+
+/* ── PLAY AREA ── */
+.play-area{flex:1;display:flex;align-items:center;justify-content:center;padding:1rem;gap:2rem;flex-wrap:wrap;}
+
+/* Deck & Discard */
+.piles{display:flex;flex-direction:column;align-items:center;gap:0.75rem;}
+.piles-row{display:flex;gap:1rem;align-items:center;}
+.pile-label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);text-align:center;letter-spacing:0.1em;text-transform:uppercase;}
+
+.card-slot{width:var(--card-w);height:var(--card-h);border-radius:8px;border:2px dashed rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.deck-card{width:var(--card-w);height:var(--card-h);border-radius:8px;background:linear-gradient(135deg,#1a3a5c,#0f2240);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.deck-card:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+.deck-card .back-pattern{font-size:1.8rem;opacity:0.5;}
+.deck-count{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--muted);text-align:center;margin-top:0.25rem;}
+
+/* Visible card */
+.play-card{width:var(--card-w);height:var(--card-h);border-radius:8px;background:white;border:2px solid #ddd;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:4px 5px;font-weight:700;font-size:0.8rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;transition:all 0.2s;position:relative;flex-shrink:0;user-select:none;}
+.play-card:hover{transform:translateY(-5px);box-shadow:0 10px 24px rgba(0,0,0,0.4);}
+.play-card.red-card{color:var(--red);}
+.play-card.black-card{color:#12120f;}
+.play-card .cr{font-size:0.85rem;line-height:1;}
+.play-card .cs{font-size:1rem;line-height:1;}
+.play-card .cc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.6rem;opacity:0.15;}
+.play-card.selected{border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(212,168,67,0.4),0 6px 20px rgba(0,0,0,0.4);transform:translateY(-8px);}
+.play-card.playable-draw{border-color:var(--green);box-shadow:0 0 12px rgba(39,174,96,0.4);}
+
+/* ── MELD AREA ── */
+.meld-area{padding:0.75rem 1rem;flex-shrink:0;background:rgba(0,0,0,0.2);border-top:1px solid var(--border);}
+.meld-area-label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.5rem;}
+.meld-groups{display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-start;}
+.meld-group{display:flex;flex-direction:column;gap:0.3rem;align-items:center;}
+.meld-cards{display:flex;gap:3px;}
+.meld-tag{font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--green);text-align:center;}
+.add-meld-btn{padding:0.35rem 0.75rem;background:rgba(39,174,96,0.12);border:1px dashed rgba(39,174,96,0.4);border-radius:6px;color:var(--green);font-family:'JetBrains Mono',monospace;font-size:0.68rem;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.add-meld-btn:hover{background:rgba(39,174,96,0.2);}
+.remove-meld-btn{padding:0.2rem 0.5rem;background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.3);border-radius:4px;color:rgba(192,57,43,0.8);font-family:'JetBrains Mono',monospace;font-size:0.6rem;cursor:pointer;}
+
+/* ── HAND ── */
+.hand-area{padding:0.75rem 1rem 1.25rem;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;}
+.hand-label{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;}
+.hand-cards{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}
+.action-row{display:flex;gap:0.5rem;justify-content:center;margin-top:0.75rem;flex-wrap:wrap;}
+.action-btn{padding:0.45rem 1.1rem;border:none;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.ab-discard{background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.4);color:rgba(192,57,43,0.9);}
+.ab-discard:hover{background:rgba(192,57,43,0.25);}
+.ab-declare{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#12120f;font-weight:700;}
+.ab-declare:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(212,168,67,0.4);}
+.ab-declare:disabled,.ab-discard:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
+
+/* ── MODALS ── */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(8px);padding:1rem;}
+.modal.show{display:flex;}
+.modal-box{background:var(--surface);border:1px solid rgba(212,168,67,0.25);border-radius:14px;padding:1.75rem;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;}
+.modal-box h3{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold);margin-bottom:1rem;}
+.modal-actions{display:flex;gap:0.75rem;margin-top:1.25rem;}
+.modal-actions button{flex:1;}
+
+/* HOW TO PLAY */
+.how-section{margin-bottom:1.1rem;}
+.how-section h4{font-family:'JetBrains Mono',monospace;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem;}
+.how-section p,.how-section li{font-size:0.83rem;color:rgba(245,240,232,0.75);line-height:1.6;}
+.how-section ul{padding-left:1.2rem;}
+.how-section li{margin-bottom:0.25rem;}
+.variant-card{background:var(--surface2);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem;border-left:2px solid var(--gold);}
+.variant-card strong{color:var(--cream);font-size:0.85rem;}
+.variant-card p{font-size:0.78rem;color:var(--muted);margin-top:0.2rem;}
+
+/* WINNER */
+.winner-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(10px);}
+.winner-overlay.show{display:flex;}
+.winner-name{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:700;color:var(--gold);text-align:center;animation:popIn 0.5s ease;}
+.final-scores{display:flex;flex-direction:column;gap:0.5rem;margin:1.5rem 0;width:100%;max-width:320px;}
+.final-row{display:flex;justify-content:space-between;padding:0.6rem 1rem;background:var(--surface);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:0.82rem;}
+.final-row.winner-row{border:1px solid var(--gold);color:var(--gold);}
+@keyframes popIn{from{transform:scale(0.4);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(18,18,15,0.95);border:1px solid rgba(212,168,67,0.3);border-radius:8px;padding:0.55rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--cream);z-index:400;opacity:0;transition:opacity 0.25s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.toast.error-toast{border-color:rgba(192,57,43,0.5);color:#e88;}
+.err{color:#e74c3c;font-family:'JetBrains Mono',monospace;font-size:0.75rem;text-align:center;margin-top:0.4rem;min-height:1rem;}
+.pulse{animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+@media(max-width:480px){
+  :root{--card-w:54px;--card-h:82px;}
+  .play-area{gap:1rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOBBY ══════════════════════════════════════════════════════════════════ -->
+<div id="lobby-screen" class="screen active">
+  <div class="logo">Rummy</div>
+  <div class="logo-sub">Multiplayer Card Game</div>
+
+  <div class="panel">
+    <h2>Join the Table</h2>
+    <div class="form-group">
+      <label>Your Name <span style="color:var(--gold)">(min. 6 characters)</span></label>
+      <input type="text" id="player-name" placeholder="Enter your name" maxlength="24">
+    </div>
+
+    <button class="btn btn-gold" onclick="goCreate()">Create New Game</button>
+    <div class="divider">or join existing</div>
+    <div class="form-group">
+      <label>Game Code</label>
+      <input type="text" id="join-code" placeholder="Enter 8-letter code" maxlength="8" style="text-transform:uppercase">
+    </div>
+    <button class="btn btn-outline" onclick="joinGame()">Join Game</button>
+    <div class="err" id="lobby-err"></div>
+
+    <div style="text-align:center;margin-top:1rem;">
+      <button class="btn-danger" onclick="showHowToPlay()" style="border:none;color:var(--muted);background:transparent;font-size:0.75rem;cursor:pointer;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;">? How to Play</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREATE GAME ════════════════════════════════════════════════════════════ -->
+<div id="create-screen" class="screen">
+  <div class="logo" style="font-size:2.2rem">New Game</div>
+  <div class="logo-sub" style="margin-bottom:1.5rem">Set the rules</div>
+
+  <div class="panel">
+    <h2>Game Settings</h2>
+
+    <div class="form-group">
+      <label>Variant</label>
+      <div class="segment">
+        <button class="segment-btn" data-v="classic" onclick="pickVariant('classic')">Classic<br><span style="font-size:0.6rem;opacity:0.7">7 cards · 1 deck</span></button>
+        <button class="segment-btn active" data-v="gin" onclick="pickVariant('gin')">Gin Rummy<br><span style="font-size:0.6rem;opacity:0.7">10 cards · 1 deck</span></button>
+        <button class="segment-btn" data-v="indian" onclick="pickVariant('indian')">Indian<br><span style="font-size:0.6rem;opacity:0.7">13 cards · 2 decks</span></button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Max Players</label>
+      <select id="max-players">
+        <option value="2">2 Players</option>
+        <option value="3">3 Players</option>
+        <option value="4" selected>4 Players</option>
+        <option value="5">5 Players</option>
+        <option value="6">6 Players</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Scoring Mode</label>
+      <select id="scoring-mode" onchange="updateTargetVisibility()">
+        <option value="loser_pays">Loser Pays (deadwood points per round)</option>
+        <option value="first_100_loses">First to 100 Loses</option>
+        <option value="target_wins">Race to Target Score</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="target-group" style="display:none">
+      <label>Target Score</label>
+      <input type="text" id="target-score" value="100" placeholder="e.g. 100">
+    </div>
+
+    <button class="btn btn-gold" onclick="createGame()">Create Game</button>
+    <button class="btn btn-outline" style="margin-top:0.5rem" onclick="showScreen('lobby-screen')">Back</button>
+    <div class="err" id="create-err"></div>
+  </div>
+</div>
+
+<!-- ══ WAITING ROOM ═══════════════════════════════════════════════════════════ -->
+<div id="waiting-screen" class="screen">
+  <div class="logo" style="font-size:2rem">Waiting Room</div>
+  <p style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.2em;color:var(--muted);margin-top:0.25rem">SHARE THIS CODE WITH FRIENDS</p>
+  <div class="game-code" id="display-code">──────</div>
+  <p id="game-config-desc" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--muted);margin-bottom:1.25rem;text-align:center;"></p>
+
+  <div style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;" id="waiting-player-list"></div>
+
+  <button class="btn btn-gold" id="start-btn" style="max-width:280px" onclick="startGame()" disabled>Waiting for players…</button>
+  <button class="btn btn-outline" style="max-width:280px;margin-top:0.5rem;border-color:rgba(192,57,43,0.3);color:rgba(192,57,43,0.6)" onclick="confirmExit()">Leave</button>
+  <div class="err" id="waiting-err"></div>
+  <p class="pulse" style="margin-top:1.25rem;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:rgba(245,240,232,0.25)">◉ LIVE</p>
+</div>
+
+<!-- ══ GAME SCREEN ════════════════════════════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+
+  <div class="top-bar">
+    <div>
+      <div class="game-title">♠ Rummy</div>
+      <div class="round-badge" id="round-badge">Round 1</div>
+    </div>
+    <div class="turn-pill" id="turn-pill">Loading…</div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <button class="btn-danger" style="font-size:0.65rem;padding:0.35rem 0.7rem" onclick="showHowToPlay()">?</button>
+      <button class="btn-danger" onclick="confirmExit()">✕ Exit</button>
+    </div>
+  </div>
+
+  <div class="score-bar" id="score-bar"></div>
+
+  <div class="play-area">
+    <!-- Draw pile + discard -->
+    <div class="piles">
+      <div class="piles-row">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
+          <div class="deck-card" id="draw-deck" onclick="drawFromDeck()" title="Draw from deck">
+            <div class="back-pattern">🂠</div>
+          </div>
+          <div class="deck-count" id="deck-count">— cards</div>
+          <div class="pile-label">Draw Pile</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
+          <div id="discard-slot" class="card-slot"></div>
+          <div class="pile-label">Discard</div>
+        </div>
+      </div>
+      <div id="draw-status" style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--muted);text-align:center;margin-top:0.25rem;min-height:1rem"></div>
+    </div>
+  </div>
+
+  <!-- Declared melds -->
+  <div class="meld-area" id="meld-area" style="display:none">
+    <div class="meld-area-label">Your Melds</div>
+    <div class="meld-groups" id="meld-groups"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;align-items:center">
+      <button class="add-meld-btn" onclick="addMeldFromSelected()">+ Add Meld from Selected</button>
+      <button class="add-meld-btn" onclick="clearMelds()" style="border-color:rgba(192,57,43,0.4);color:rgba(192,57,43,0.7)">✕ Clear All Melds</button>
+    </div>
+    <div class="err" id="meld-err" style="text-align:left;margin-top:0.4rem"></div>
+  </div>
+
+  <!-- Hand -->
+  <div class="hand-area">
+    <div class="hand-label">
+      <span>Your Hand</span>
+      <span id="hand-count" style="color:var(--gold)"></span>
+    </div>
+    <div class="hand-cards" id="hand-cards"></div>
+    <div class="action-row">
+      <button class="action-btn ab-discard" id="discard-btn" onclick="discardSelected()" disabled>Discard Selected</button>
+      <button class="action-btn ab-declare" id="declare-btn" onclick="declareMelds()" disabled>Declare &amp; Go Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ════════════════════════════════════════════════════════════ -->
+<div class="modal" id="howto-modal">
+  <div class="modal-box" style="max-width:560px">
+    <h3>How to Play Rummy</h3>
+
+    <div class="how-section">
+      <h4>🎯 Objective</h4>
+      <p>Be the first to meld all your cards into valid groups (sets or runs) and go out!</p>
+    </div>
+
+    <div class="how-section">
+      <h4>🃏 Variants</h4>
+      <div class="variant-card"><strong>Classic Rummy</strong><p>7 cards each, 1 deck, 2–6 players. Great for beginners.</p></div>
+      <div class="variant-card"><strong>Gin Rummy</strong><p>10 cards each, 1 deck, 2–6 players. More strategy, classic style.</p></div>
+      <div class="variant-card"><strong>Indian Rummy</strong><p>13 cards each, 2 decks, 2–6 players. The most popular variant in India.</p></div>
+    </div>
+
+    <div class="how-section">
+      <h4>🔄 On Your Turn</h4>
+      <ul>
+        <li><strong>Draw</strong> — pick from the face-down deck OR the top discard card</li>
+        <li><strong>Arrange</strong> — select cards and click "Add Meld" to group them</li>
+        <li><strong>Discard</strong> — select one card and click "Discard Selected" to end your turn</li>
+        <li><strong>Go Out</strong> — when all cards form valid melds (one card left to discard), click "Declare &amp; Go Out"!</li>
+      </ul>
+    </div>
+
+    <div class="how-section">
+      <h4>✅ Valid Melds</h4>
+      <ul>
+        <li><strong>Set</strong> — 3 or 4 cards of the same rank, different suits (e.g. 7♦ 7♥ 7♣)</li>
+        <li><strong>Run</strong> — 3 or more consecutive cards of the same suit (e.g. 4♠ 5♠ 6♠ 7♠)</li>
+        <li>Ace can be low (A-2-3) in Classic/Gin</li>
+      </ul>
+    </div>
+
+    <div class="how-section">
+      <h4>📊 Scoring Modes</h4>
+      <ul>
+        <li><strong>Loser Pays</strong> — each round, losers score points equal to unmelded card values. Low score wins.</li>
+        <li><strong>First to 100 Loses</strong> — accumulate points each round; first player to hit 100 is out. Last one standing wins.</li>
+        <li><strong>Race to Target</strong> — winner earns opponents' deadwood points. First to reach the target wins.</li>
+      </ul>
+    </div>
+
+    <div class="how-section">
+      <h4>🃏 Card Points</h4>
+      <p>A, J, Q, K = 10 pts each &nbsp;·&nbsp; Number cards = face value</p>
+    </div>
+
+    <div class="how-section">
+      <h4>💡 Tips</h4>
+      <ul>
+        <li>Draw from the discard pile only if it completes a meld</li>
+        <li>Discard high-point cards early if they don't fit your melds</li>
+        <li>Watch the discard pile — it tells you what opponents need!</li>
+      </ul>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-gold" onclick="closeModal('howto-modal')">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EXIT MODAL ══════════════════════════════════════════════════════════════ -->
+<div class="modal" id="exit-modal">
+  <div class="modal-box" style="max-width:340px;text-align:center">
+    <h3>Leave Game?</h3>
+    <p style="font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:1rem" id="exit-msg">Are you sure you want to leave?</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('exit-modal')">Stay</button>
+      <button class="btn" style="background:rgba(192,57,43,0.8);color:white" onclick="exitGame()">Leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WINNER ══════════════════════════════════════════════════════════════════ -->
+<div class="winner-overlay" id="winner-overlay">
+  <div style="font-size:3rem;margin-bottom:0.5rem">🏆</div>
+  <div class="winner-name" id="winner-name">Winner!</div>
+  <p style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);margin-top:0.25rem">Final Scores</p>
+  <div class="final-scores" id="final-scores"></div>
+  <button class="btn btn-gold" style="max-width:200px;margin-top:0.5rem" onclick="location.reload()">Play Again</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ CONFIG ══════════════════════════════════════════════════════════════════
+const API = window.RUMMY_API || window.LUCKY7_API || 'http://localhost:5000';
+const SUIT_SYM = {diamonds:'♦',hearts:'♥',clubs:'♣',spades:'♠'};
+const SUIT_COL = {diamonds:'red-card',hearts:'red-card',clubs:'black-card',spades:'black-card'};
+const RN = {1:'A',2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K'};
+
+let G = { gameId:null, playerId:null, isHost:false, polling:null };
+let selectedCards = [];   // card ids selected in hand
+let pendingMelds  = [];   // [[card,card,...], ...]
+let chosenVariant = 'gin';
+let lastStatus    = null;
+
+// ══ NAVIGATION ══════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goCreate() {
+  const name = document.getElementById('player-name').value.trim();
+  if (name.length < 6) { showErr('lobby-err','Name must be at least 6 characters'); return; }
+  showScreen('create-screen');
+}
+
+// ══ VARIANT PICKER ══════════════════════════════════════════════════════════
+function pickVariant(v) {
+  chosenVariant = v;
+  document.querySelectorAll('.segment-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.v === v);
+  });
+}
+function updateTargetVisibility() {
+  const mode = document.getElementById('scoring-mode').value;
+  document.getElementById('target-group').style.display =
+    (mode === 'first_100_loses' || mode === 'target_wins') ? 'block' : 'none';
+}
+
+// ══ CREATE GAME ══════════════════════════════════════════════════════════════
+async function createGame() {
+  const name    = document.getElementById('player-name').value.trim();
+  const maxP    = document.getElementById('max-players').value;
+  const scoring = document.getElementById('scoring-mode').value;
+  const target  = parseInt(document.getElementById('target-score').value) || 100;
+
+  if (name.length < 6) { showErr('create-err','Name must be at least 6 characters'); return; }
+  try {
+    const r = await api('/api/rummy/create','POST',{
+      host_name: name, variant: chosenVariant,
+      max_players: parseInt(maxP), scoring, target
+    });
+    if (r.error) { showErr('create-err', r.error); return; }
+    G.gameId = r.game_id; G.playerId = r.player_id; G.isHost = true;
+    saveSession();
+    enterWaiting();
+  } catch(e) { showErr('create-err','Cannot connect to server. Is the backend running?'); }
+}
+
+// ══ JOIN GAME ════════════════════════════════════════════════════════════════
+async function joinGame() {
+  const name = document.getElementById('player-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (name.length < 6) { showErr('lobby-err','Name must be at least 6 characters'); return; }
+  if (!code) { showErr('lobby-err','Enter a game code'); return; }
+  try {
+    const r = await api('/api/rummy/join','POST',{game_id:code, player_name:name});
+    if (r.error) { showErr('lobby-err', r.error); return; }
+    G.gameId = r.game_id; G.playerId = r.player_id; G.isHost = false;
+    saveSession();
+    enterWaiting();
+  } catch(e) { showErr('lobby-err','Cannot connect to server.'); }
+}
+
+function enterWaiting() {
+  document.getElementById('display-code').textContent = G.gameId;
+  showScreen('waiting-screen');
+  startPolling();
+}
+
+// ══ START GAME ═══════════════════════════════════════════════════════════════
+async function startGame() {
+  const r = await api('/api/rummy/start','POST',{game_id:G.gameId, player_id:G.playerId});
+  if (r.error) showErr('waiting-err', r.error);
+}
+
+// ══ POLLING ══════════════════════════════════════════════════════════════════
+function startPolling() { pollState(); G.polling = setInterval(pollState, 2200); }
+async function pollState() {
+  if (!G.gameId) return;
+  try {
+    const d = await api(`/api/rummy/state?game_id=${G.gameId}&player_id=${G.playerId}`,'GET');
+    if (d.error) return;
+    renderState(d);
+  } catch(e) {}
+}
+
+// ══ RENDER ═══════════════════════════════════════════════════════════════════
+function renderState(d) {
+  if (d.status === 'waiting') renderWaiting(d);
+  else if (d.status === 'playing' || d.status === 'finished') {
+    if (lastStatus === 'waiting') showScreen('game-screen');
+    renderGame(d);
+    if (d.game_over && lastStatus !== 'finished') renderWinner(d);
+  }
+  lastStatus = d.status;
+}
+
+function renderWaiting(d) {
+  const variantLabels = {classic:'Classic · 7 cards',gin:'Gin Rummy · 10 cards',indian:'Indian · 13 cards'};
+  const scoringLabels = {loser_pays:'Loser Pays',first_100_loses:`First to ${d.target} Loses`,target_wins:`Race to ${d.target} pts`};
+  document.getElementById('game-config-desc').textContent =
+    `${variantLabels[d.variant] || d.variant} · ${d.max_players} players max · ${scoringLabels[d.scoring] || d.scoring}`;
+
+  const list = document.getElementById('waiting-player-list');
+  list.innerHTML = '';
+  d.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-chip';
+    div.innerHTML = `<div class="av">${p.name[0].toUpperCase()}</div><span>${p.name}</span>${d.host===p.id?'<span class="host-tag">HOST</span>':''}`;
+    list.appendChild(div);
+  });
+
+  const sb = document.getElementById('start-btn');
+  if (G.isHost) {
+    const ready = d.player_count >= 2;
+    sb.disabled = !ready;
+    sb.textContent = ready ? `Start Game (${d.player_count} players)` : 'Need at least 2 players…';
+  } else {
+    sb.disabled = true;
+    sb.textContent = 'Waiting for host to start…';
+  }
+}
+
+function renderGame(d) {
+  // Top bar
+  document.getElementById('round-badge').textContent = `Round ${d.round}`;
+  const pill = document.getElementById('turn-pill');
+  if (d.is_my_turn) { pill.textContent='✦ YOUR TURN'; pill.className='turn-pill mine'; }
+  else {
+    const cur = d.players.find(p=>p.is_current);
+    pill.textContent = cur ? `${cur.name}'s turn` : '…';
+    pill.className = 'turn-pill';
+  }
+
+  // Score bar
+  const sb = document.getElementById('score-bar');
+  sb.innerHTML = '';
+  d.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = `score-chip ${p.is_current?'active-player':''}`;
+    div.innerHTML = `<div class="sc-name">${p.name}${p.is_me?' (you)':''}</div><div class="sc-score">${p.score}</div><div class="sc-cards">${p.card_count} cards</div>`;
+    sb.appendChild(div);
+  });
+
+  // Discard pile top
+  const ds = document.getElementById('discard-slot');
+  if (d.top_discard) {
+    ds.innerHTML = '';
+    ds.appendChild(makeCardEl(d.top_discard, d.is_my_turn && !d.drawn_this_turn, () => drawFromDiscard()));
+    ds.firstChild.title = 'Draw from discard';
+    if (d.is_my_turn && !d.drawn_this_turn) ds.firstChild.classList.add('playable-draw');
+  } else {
+    ds.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;text-align:center">Empty</div>';
+  }
+
+  // Deck
+  document.getElementById('deck-count').textContent = `${d.deck_count} cards`;
+  const drawDeck = document.getElementById('draw-deck');
+  if (d.is_my_turn && !d.drawn_this_turn) {
+    drawDeck.style.cursor='pointer'; drawDeck.style.opacity='1';
+  } else {
+    drawDeck.style.cursor='default'; drawDeck.style.opacity='0.5';
+  }
+
+  // Draw status
+  const ds2 = document.getElementById('draw-status');
+  if (d.is_my_turn) {
+    ds2.textContent = d.drawn_this_turn ? 'Drawn ✓ — now discard or declare' : 'Draw a card to begin your turn';
+  } else {
+    ds2.textContent = '';
+  }
+
+  // Hand
+  renderHand(d);
+
+  // Melds panel
+  const meldArea = document.getElementById('meld-area');
+  meldArea.style.display = d.is_my_turn && d.drawn_this_turn ? 'block' : 'none';
+  if (d.is_my_turn && d.drawn_this_turn) renderMelds(d);
+
+  // Buttons
+  const hasSelected = selectedCards.length > 0;
+  document.getElementById('discard-btn').disabled = !(d.is_my_turn && d.drawn_this_turn && selectedCards.length === 1);
+  document.getElementById('declare-btn').disabled = !(d.is_my_turn && d.drawn_this_turn);
+}
+
+function renderHand(d) {
+  const hc = document.getElementById('hand-cards');
+  hc.innerHTML = '';
+  document.getElementById('hand-count').textContent = `${d.my_hand.length} cards`;
+
+  // Sort: suit order then rank
+  const suitOrder = {diamonds:0,hearts:1,clubs:2,spades:3};
+  const sorted = [...d.my_hand].sort((a,b)=>suitOrder[a.suit]-suitOrder[b.suit]||a.rank-b.rank);
+
+  sorted.forEach(card => {
+    const el = makeCardEl(card, d.is_my_turn && d.drawn_this_turn);
+    if (selectedCards.includes(card.id)) el.classList.add('selected');
+    if (d.is_my_turn && d.drawn_this_turn) {
+      el.onclick = () => toggleSelect(card.id, d);
+    }
+    hc.appendChild(el);
+  });
+}
+
+function makeCardEl(card, clickable=false, onClick=null) {
+  const div = document.createElement('div');
+  div.className = `play-card ${SUIT_COL[card.suit]||'black-card'}`;
+  if (clickable) div.style.cursor = 'pointer';
+  div.innerHTML = `<div class="cr">${RN[card.rank]}</div><div class="cs">${SUIT_SYM[card.suit]}</div><div class="cc">${SUIT_SYM[card.suit]}</div>`;
+  if (onClick) div.onclick = onClick;
+  return div;
+}
+
+function toggleSelect(cardId, d) {
+  const idx = selectedCards.indexOf(cardId);
+  if (idx === -1) selectedCards.push(cardId);
+  else selectedCards.splice(idx, 1);
+  renderHand(d);
+  document.getElementById('discard-btn').disabled = !(selectedCards.length === 1 && d.drawn_this_turn);
+}
+
+function renderMelds(d) {
+  const mg = document.getElementById('meld-groups');
+  mg.innerHTML = '';
+  pendingMelds.forEach((meld, i) => {
+    const div = document.createElement('div');
+    div.className = 'meld-group';
+    const cards = document.createElement('div');
+    cards.className = 'meld-cards';
+    meld.forEach(c => cards.appendChild(makeCardEl(c)));
+    const tag = document.createElement('div');
+    tag.className = 'meld-tag';
+    tag.textContent = isMeldRun(meld) ? '✓ Run' : '✓ Set';
+    const rm = document.createElement('button');
+    rm.className = 'remove-meld-btn';
+    rm.textContent = '✕ Remove';
+    rm.onclick = () => { pendingMelds.splice(i,1); renderMelds(d); };
+    div.appendChild(cards); div.appendChild(tag); div.appendChild(rm);
+    mg.appendChild(div);
+  });
+}
+
+function isMeldRun(cards) {
+  const real = cards.filter(c=>c.suit!=='joker');
+  if (!real.length) return false;
+  const suits = new Set(real.map(c=>c.suit));
+  return suits.size === 1;
+}
+
+// ══ GAME ACTIONS ══════════════════════════════════════════════════════════════
+async function drawFromDeck() {
+  const r = await api('/api/rummy/draw','POST',{game_id:G.gameId,player_id:G.playerId,source:'deck'});
+  if (r.error) toast(r.error, true);
+  else pollState();
+}
+async function drawFromDiscard() {
+  const r = await api('/api/rummy/draw','POST',{game_id:G.gameId,player_id:G.playerId,source:'discard'});
+  if (r.error) toast(r.error, true);
+  else { selectedCards=[]; pollState(); }
+}
+
+async function discardSelected() {
+  if (selectedCards.length !== 1) { toast('Select exactly 1 card to discard',true); return; }
+  const r = await api('/api/rummy/discard','POST',{game_id:G.gameId,player_id:G.playerId,card_id:selectedCards[0]});
+  if (r.error) toast(r.error, true);
+  else { selectedCards=[]; pendingMelds=[]; pollState(); }
+}
+
+function addMeldFromSelected() {
+  if (selectedCards.length < 3) { showMeldErr('Select at least 3 cards to form a meld'); return; }
+  // find card objects from current hand in DOM
+  const handCards = document.querySelectorAll('#hand-cards .play-card');
+  // We need hand data — re-fetch from last poll isn't easy here, so store it
+  const cards = selectedCards.map(id => lastHand.find(c=>c.id===id)).filter(Boolean);
+  if (cards.length !== selectedCards.length) { showMeldErr('Could not find all selected cards'); return; }
+  pendingMelds.push(cards);
+  selectedCards = [];
+  pollState();
+}
+
+function clearMelds() { pendingMelds=[]; pollState(); }
+
+async function declareMelds() {
+  // Build final melds — send pendingMelds to backend
+  const r = await api('/api/rummy/declare_melds','POST',{game_id:G.gameId,player_id:G.playerId,melds:pendingMelds});
+  if (r.error) { toast(r.error,true); return; }
+  selectedCards=[]; pendingMelds=[];
+  pollState();
+}
+
+// ══ WINNER ════════════════════════════════════════════════════════════════════
+function renderWinner(d) {
+  clearInterval(G.polling);
+  document.getElementById('winner-name').textContent =
+    d.winner === G.playerId ? '🎉 You Win!' : `${d.winner_name} Wins!`;
+  const fs = document.getElementById('final-scores');
+  fs.innerHTML = '';
+  const sorted = [...d.players].sort((a,b)=>a.score-b.score);
+  sorted.forEach(p => {
+    const div = document.createElement('div');
+    div.className = `final-row ${p.id===d.winner?'winner-row':''}`;
+    div.innerHTML = `<span>${p.id===d.winner?'🏆 ':''} ${p.name}</span><span>${p.score} pts</span>`;
+    fs.appendChild(div);
+  });
+  document.getElementById('winner-overlay').classList.add('show');
+}
+
+// ══ EXIT ══════════════════════════════════════════════════════════════════════
+function confirmExit() {
+  document.getElementById('exit-msg').textContent =
+    lastStatus === 'playing'
+      ? 'Are you sure? Your hand will remain in play and others will continue.'
+      : 'Leave the waiting room?';
+  document.getElementById('exit-modal').classList.add('show');
+}
+function exitGame() {
+  clearInterval(G.polling);
+  sessionStorage.removeItem('rummy_session');
+  G = { gameId:null,playerId:null,isHost:false,polling:null };
+  lastStatus=null; selectedCards=[]; pendingMelds=[];
+  closeModal('exit-modal');
+  document.getElementById('winner-overlay').classList.remove('show');
+  document.getElementById('player-name').value='';
+  document.getElementById('join-code').value='';
+  showScreen('lobby-screen');
+}
+
+// ══ HOW TO PLAY ═══════════════════════════════════════════════════════════════
+function showHowToPlay() { document.getElementById('howto-modal').classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+['howto-modal','exit-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(id); });
+});
+
+// ══ HELPERS ════════════════════════════════════════════════════════════════════
+let lastHand = [];
+const origRenderGame = renderGame;
+
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers:{'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const url = path.startsWith('http') ? path : API + path;
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+// Intercept to cache hand
+const _renderGame = renderGame;
+window.renderGame = function(d) {
+  lastHand = d.my_hand || [];
+  _renderGame(d);
+};
+
+function showErr(id, msg) {
+  document.getElementById(id).textContent = msg;
+  setTimeout(()=>document.getElementById(id).textContent='', 4000);
+}
+function showMeldErr(msg) {
+  document.getElementById('meld-err').textContent = msg;
+  setTimeout(()=>document.getElementById('meld-err').textContent='', 3000);
+}
+function toast(msg, isErr=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast${isErr?' error-toast':''} show`;
+  setTimeout(()=>t.className='toast',2800);
+}
+function saveSession() { sessionStorage.setItem('rummy_session', JSON.stringify(G)); }
+
+// ══ RESTORE SESSION ════════════════════════════════════════════════════════════
+const saved = sessionStorage.getItem('rummy_session');
+if (saved) {
+  try {
+    const s = JSON.parse(saved);
+    if (s.gameId && s.playerId) {
+      G = {...G,...s};
+      showScreen('waiting-screen');
+      document.getElementById('display-code').textContent = G.gameId;
+      startPolling();
+    }
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
