@@ -1,0 +1,41 @@
+name: Test Backend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run tests
+        run: |
+          cd backend
+          python -c "
+          from app import create_deck, deal_cards, find_starter, get_valid_moves
+          deck = create_deck()
+          assert len(deck) == 52
+          hands = deal_cards(['p1','p2','p3','p4'], deck)
+          assert all(len(h)==13 for h in hands.values())
+          print('✅ Lucky 7 tests passed')
+
+          from rummy import make_deck, is_set, is_run
+          deck2 = make_deck(1)
+          assert len(deck2) == 52
+          cards = [{'suit':'diamonds','rank':7,'id':'a'},{'suit':'hearts','rank':7,'id':'b'},{'suit':'clubs','rank':7,'id':'c'}]
+          assert is_set(cards) == True
+          run_cards = [{'suit':'spades','rank':4,'id':'d'},{'suit':'spades','rank':5,'id':'e'},{'suit':'spades','rank':6,'id':'f'}]
+          assert is_run(run_cards) == True
+          print('✅ Rummy tests passed')
+          "
