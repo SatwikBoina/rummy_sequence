@@ -13,7 +13,7 @@ app.register_blueprint(rummy_bp)
 games = {}
 
 SUITS = ['diamonds', 'hearts', 'clubs', 'spades']
-RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+RANKS = [1,2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
 def create_deck():
     deck = []
